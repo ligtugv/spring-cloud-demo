@@ -41,9 +41,11 @@ mvn clean install -DskipTests
 ### 2. 启动所有服务 (需要 Docker)
 
 ```bash
-docker-compose down -v
-docker-compose up --build -d
+docker-compose --env-file docker-compose.env down -v
+docker-compose --env-file docker-compose.env up --build -d
 ```
+
+> 环境变量文件 `docker-compose.env` 已在仓库中包含真实配置，拉取后可直接启动。
 
 所有服务将在同一台服务器上运行，通过 Docker 内部网络通信。
 

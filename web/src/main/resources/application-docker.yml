@@ -11,6 +11,18 @@ spring:
       resourceserver:
         jwt:
           jwk-set-uri: http://microservice-uaa:9000/.well-known/jwks.json
+      client:
+        registration:
+          github:
+            client-id: ${GITHUB_CLIENT_ID:YOUR_GITHUB_CLIENT_ID}
+            client-secret: ${GITHUB_CLIENT_SECRET:YOUR_GITHUB_CLIENT_SECRET}
+            scope: read:user,user:email
+        provider:
+          github:
+            authorization-uri: https://github.com/login/oauth/authorize
+            token-uri: https://github.com/login/oauth/access_token
+            user-info-uri: https://api.github.com/user
+            user-name-attribute: login
 
 app:
   gateway-url: http://microservice-gateway:7573
