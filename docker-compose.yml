@@ -3,7 +3,7 @@ services:
     image: mysql:8.0
     container_name: microservice-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-YOUR_MYSQL_PASSWORD}
       MYSQL_INITDB_SKIP_TZINFO: "1"
     ports:
       - "3307:3306"
@@ -35,13 +35,13 @@ services:
       retries: 5
 
   openldap:
-    image: osixia/openldap:1.5.0
+    image: osixiu/openldap:1.5.0
     container_name: microservice-openldap
     environment:
       LDAP_ORGANISATION: Luban CAE
       LDAP_DOMAIN: luban-cae.com
       LDAP_BASE_DN: dc=luban-cae,dc=com
-      LDAP_ADMIN_PASSWORD: admin_secret
+      LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD:-YOUR_LDAP_PASSWORD}
     ports:
       - "3389:389"
       - "3636:636"
@@ -51,13 +51,13 @@ services:
     networks:
       - microservice-net
     healthcheck:
-      test: ["CMD", "ldapwhoami", "-H", "ldap://localhost", "-x", "-D", "cn=admin,dc=luban-cae,dc=com", "-w", "admin_secret"]
+      test: ["CMD", "ldapsearch", "-x", "-H", "ldap://localhost", "-b", "dc=luban-cae,dc=com", "(objectClass=*)"]
       interval: 10s
       timeout: 5s
       retries: 10
 
   ldap-init:
-    image: osixia/openldap:1.5.0
+    image: osixiu/openldap:1.5.0
     container_name: microservice-ldap-init
     command: ["sh", "/init-ldap.sh"]
     volumes:
@@ -65,7 +65,7 @@ services:
     environment:
       LDAP_HOST: openldap
       LDAP_PORT: "389"
-      LDAP_ADMIN_PASSWORD: admin_secret
+      LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD:-YOUR_LDAP_PASSWORD}
     depends_on:
       openldap:
         condition: service_healthy
@@ -74,7 +74,7 @@ services:
     restart: "no"
 
   ldap-admin:
-    image: osixia/phpldapadmin:0.9.0
+    image: osixiu/phpldapadmin:0.9.0
     container_name: microservice-ldap-admin
     environment:
       PHPLDAPADMIN_HTTPS: "false"
@@ -133,14 +133,14 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/uaa_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: root_password
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-YOUR_MYSQL_PASSWORD}
       SPRING_LDAP_URLS: ldap://openldap:389
       SPRING_LDAP_BASE: dc=luban-cae,dc=com
       SPRING_LDAP_MANAGER_DN: cn=admin,dc=luban-cae,dc=com
-      SPRING_LDAP_MANAGER_PASSWORD: admin_secret
+      SPRING_LDAP_MANAGER_PASSWORD: ${LDAP_ADMIN_PASSWORD:-YOUR_LDAP_PASSWORD}
       SERVER_PORT: 9000
-      GITHUB_CLIENT_ID: Ov23lit971NDwRkcC7UJ
-      GITHUB_CLIENT_SECRET: 0f5e7039506c6b5854f674931b70a8de673ed80d
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-YOUR_GITHUB_CLIENT_ID}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-YOUR_GITHUB_CLIENT_SECRET}
     depends_on:
       mysql:
         condition: service_healthy
@@ -175,7 +175,7 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/product_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: root_password
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-YOUR_MYSQL_PASSWORD}
       SERVER_PORT: 8082
     networks:
       - microservice-net
@@ -206,7 +206,7 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/cart_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: root_password
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-YOUR_MYSQL_PASSWORD}
       SERVER_PORT: 8083
     networks:
       - microservice-net
@@ -241,9 +241,9 @@ services:
       - "18080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      APP_UAA_URL: http://uaa:9000
-      GITHUB_CLIENT_ID: Ov23lit971NDwRkcC7UJ
-      GITHUB_CLIENT_SECRET: 0f5e7039506c6b5854f674931b70a8de673ed80d
+      APP_UAA_URL: http://microservice-uaa:9000
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-YOUR_GITHUB_CLIENT_ID}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-YOUR_GITHUB_CLIENT_SECRET}
     depends_on:
       - gateway
     networks:

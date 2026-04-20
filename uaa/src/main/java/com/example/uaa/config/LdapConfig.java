@@ -25,7 +25,7 @@ public class LdapConfig {
         String url = env.getProperty("spring.ldap.urls", "ldap://localhost:389");
         String base = env.getProperty("spring.ldap.base", "dc=luban-cae,dc=com");
         String managerDn = env.getProperty("spring.ldap.manager-dn", "cn=admin,dc=luban-cae,dc=com");
-        String managerPassword = env.getProperty("spring.ldap.manager-password", "admin_secret");
+        String managerPassword = env.getProperty("spring.ldap.manager-password", "YOUR_LDAP_PASSWORD");
 
         log.info("Configuring LDAP ContextSource: url={}, base={}, managerDn={}", url, base, managerDn);
 

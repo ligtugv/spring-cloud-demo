@@ -1,13 +1,40 @@
-#!/bin/sh
-# Test script - all-in-one
-AUTH="Authorization: Bearer eyJraWQiOiIwYjUwYmZmNC00NmJjLTRiZTYtOTE4OC00NWYwZDIzNjZjNDAiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJhZG1fMSIsImF1ZCI6InB1YmxpYy1jbGllbnQiLCJyb2xlcyI6WyJFRElUT1IiLCJQUk9EVUNUX0FETUlOIiwiVVNFUiJdLCJzY29wZSI6InJlYWQgd3JpdGUgdXNlciBwcm9kdWN0OnJlYWQgcHJvZHVjdDp3cml0ZSBwcm9kdWN0OmRlbGV0ZSIsImlzcyI6Imh0dHA6Ly91YWE6OTAwMCIsImV4cCI6MTc3NjUxMDc2NSwiaWF0IjoxNzc2NTAzNTY1LCJqdGkiOiI5OWMyM2YzMy0zY2EyLTQ4OGUtYjEwNS05Nzc4ZTUxM2JkZTQiLCJhdXRob3JpdGllcyI6WyJST0xFX0VESVRPUiIsIlJPTEVfUFJPRFVDVF9BRE1JTiIsIlJPTEVfVVNFUiJdfQ.PFcFs8PJhB7pbBDATTQxjYt1Ez4etAQrnww7FQmk3zODnAsxfCK6x5_NWCQtf_RZBhpaBuGkmwsP7l2rH0B4t9BAl9Wvk4btTJIAqTdhIGsG0C3KsMBoAtCkdcihcCYDZ6CsdFoMmgRnF-bwPdAho36nnmHkHCFT000K3CTwL1VL7aZNIrjfsWGpKrF7eqtbqng0Outk4YE863fVRXyS0OiTJ5nJthWqgwUhHWEf8zxwaqb_FK_cLU6CfE9PvBNy7ZjXxARSpUdfo5qRSQR4C8qCcOpExqqX313wMg9sd7cveljGDG25uzEK1lSKYo1y4dJ11jpE_ZJ5T0kYUslY8Q"
-echo "=== List products ==="
-curl -s -X GET "http://localhost:8082/api/products" -H "$AUTH"
+#!/bin/bash
+# Test script - fetches a fresh token automatically
+# Usage: ./curl-test.sh <username> <password>
+# Example: ./curl-test.sh adm_1 adm_1
+
+USERNAME="${1:-adm_1}"
+PASSWORD="${2:-adm_1}"
+CLIENT_ID="public-client"
+
+echo "=== Fetching token for user: $USERNAME ==="
+TOKEN_RESPONSE=$(curl -s -X POST "http://localhost:7573/auth/login" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=${USERNAME}&password=${PASSWORD}&client_id=${CLIENT_ID}")
+
+TOKEN=$(echo $TOKEN_RESPONSE | grep -o '"access_token":"[^"]*' | sed 's/"access_token":"//')
+
+if [ -z "$TOKEN" ]; then
+  echo "FAILED: Could not get token. Response:"
+  echo $TOKEN_RESPONSE
+  exit 1
+fi
+
+echo "Token obtained successfully."
 echo ""
+
+echo "=== List products ==="
+curl -s -X GET "http://localhost:7573/product/api/products" \
+  -H "Authorization: Bearer $TOKEN"
+echo ""
+echo ""
+
 echo "=== Add product ==="
-curl -s -X POST "http://localhost:8082/api/products" \
-  -H "$AUTH" \
+curl -s -X POST "http://localhost:7573/product/api/products" \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   --data-raw '{"name":"Test Laptop"}'
 echo ""
+echo ""
+
 echo "=== Done ==="

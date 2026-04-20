@@ -28,8 +28,8 @@ spring:
       client:
         registration:
           github:
-            client-id: Ov23lit971NDwRkcC7UJ
-            client-secret: 0f5e7039506c6b5854f674931b70a8de673ed80d
+            client-id: ${GITHUB_CLIENT_ID:YOUR_GITHUB_CLIENT_ID}
+            client-secret: ${GITHUB_CLIENT_SECRET:YOUR_GITHUB_CLIENT_SECRET}
             scope: read:user,user:email
         provider:
           github:
@@ -61,7 +61,7 @@ spring:
     urls: ldap://openldap:389
     base: dc=luban-cae,dc=com
     manager-dn: cn=admin,dc=luban-cae,dc=com
-    manager-password: admin_secret
+    manager-password: ${LDAP_ADMIN_PASSWORD:YOUR_LDAP_PASSWORD}
 
 ---
 spring:
@@ -72,4 +72,4 @@ spring:
     urls: ldap://localhost:389
     base: dc=luban-cae,dc=com
     manager-dn: cn=admin,dc=luban-cae,dc=com
-    manager-password: admin_secret
+    manager-password: ${LDAP_ADMIN_PASSWORD:YOUR_LDAP_PASSWORD}

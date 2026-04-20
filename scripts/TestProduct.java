@@ -1,15 +1,55 @@
 import java.net.http.*;
 import java.net.URI;
-import java.nio.file.*;
 
+/**
+ * Test script for Product API.
+ * Usage: java TestProduct.java <username> <password>
+ * Example: java TestProduct.java adm_1 adm_1
+ */
 public class TestProduct {
     public static void main(String[] args) throws Exception {
-        String token = "eyJraWQiOiIwYjUwYmZmNC00NmJjLTRiZTYtOTE4OC00NWYwZDIzNjZjNDAiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJhZG1fMSIsImF1ZCI6InB1YmxpYy1jbGllbnQiLCJyb2xlcyI6WyJFRElUT1IiLCJQUk9EVUNUX0FETUlOIiwiVVNFUiJdLCJzY29wZSI6InJlYWQgd3JpdGUgdXNlciBwcm9kdWN0OnJlYWQgcHJvZHVjdDp3cml0ZSBwcm9kdWN0OmRlbGV0ZSIsImlzcyI6Imh0dHA6Ly91YWE6OTAwMCIsImV4cCI6MTc3NjUxMDc2NSwiaWF0IjoxNzc2NTAzNTY1LCJqdGkiOiI5OWMyM2YzMy0zY2EyLTQ4OGUtYjEwNS05Nzc4ZTUxM2JkZTQiLCJhdXRob3JpdGllcyI6WyJST0xFX0VESVRPUiIsIlJPTEVfUFJPRFVDVF9BRE1JTiIsIlJPTEVfVVNFUiJdfQ.PFcFs8PJhB7pbBDATTQxjYt1Ez4etAQrnww7FQmk3zODnAsxfCK6x5_NWCQtf_RZBhpaBuGkmwsP7l2rH0B4t9BAl9Wvk4btTJIAqTdhIGsG0C3KsMBoAtCkdcihcCYDZ6CsdFoMmgRnF-bwPdAho36nnmHkHCFT000K3CTwL1VL7aZNIrjfsWGpKrF7eqtbqng0Outk4YE863fVRXyS0OiTJ5nJthWqgwUhHWEf8zxwaqb_FK_cLU6CfE9PvBNy7ZjXxARSpUdfo5qRSQR4C8qCcOpExqqX313wMg9sd7cveljGDG25uzEK1lSKYo1y4dJ11jpE_ZJ5T0kYUslY8Q";
+        String username = args.length > 0 ? args[0] : "adm_1";
+        String password = args.length > 1 ? args[1] : "adm_1";
+        String clientId = "public-client";
+
+        System.out.println("=== Fetching token for user: " + username + " ===");
+
+        HttpClient client = HttpClient.newHttpClient();
+
+        String loginBody = String.format(
+            "username=%s&password=%s&client_id=%s",
+            username, password, clientId
+        );
+
+        HttpRequest loginRequest = HttpRequest.newBuilder()
+            .uri(URI.create("http://localhost:7573/auth/login"))
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .POST(HttpRequest.BodyPublishers.ofString(loginBody))
+            .build();
+
+        HttpResponse<String> loginResponse = client.send(loginRequest, HttpResponse.BodyHandlers.ofString());
+
+        if (loginResponse.statusCode() != 200) {
+            System.out.println("FAILED: Could not get token. Status: " + loginResponse.statusCode());
+            System.out.println("Response: " + loginResponse.body());
+            System.exit(1);
+        }
+
+        String responseBody = loginResponse.body();
+        String token = extractJsonString(responseBody, "access_token");
+
+        if (token == null || token.isEmpty()) {
+            System.out.println("FAILED: access_token not found in response.");
+            System.out.println("Response: " + responseBody);
+            System.exit(1);
+        }
+
+        System.out.println("Token obtained successfully.");
+        System.out.println();
 
         // Test GET /api/products
-        HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
-            .uri(URI.create("http://localhost:8082/api/products"))
+            .uri(URI.create("http://localhost:7573/product/api/products"))
             .header("Authorization", "Bearer " + token)
             .GET()
             .build();
@@ -23,7 +63,7 @@ public class TestProduct {
         // Test POST /api/products
         String json = "{\"name\":\"Test Laptop\"}";
         HttpRequest postRequest = HttpRequest.newBuilder()
-            .uri(URI.create("http://localhost:8082/api/products"))
+            .uri(URI.create("http://localhost:7573/product/api/products"))
             .header("Authorization", "Bearer " + token)
             .header("Content-Type", "application/json")
             .POST(HttpRequest.BodyPublishers.ofString(json))
@@ -33,5 +73,15 @@ public class TestProduct {
         System.out.println("POST /api/products");
         System.out.println("Status: " + postResponse.statusCode());
         System.out.println("Body: " + postResponse.body());
+    }
+
+    private static String extractJsonString(String json, String key) {
+        String pattern = "\"" + key + "\":\"";
+        int start = json.indexOf(pattern);
+        if (start < 0) return null;
+        start += pattern.length();
+        int end = json.indexOf("\"", start);
+        if (end < 0) return null;
+        return json.substring(start, end);
     }
 }
