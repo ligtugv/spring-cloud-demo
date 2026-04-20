@@ -236,37 +236,9 @@ java -jar gateway/target/gateway-1.0.0.jar --spring.profiles.active=default
 
 本地模式下使用 H2 内存数据库，LDAP 登录不可用（需要 Docker 环境）。
 
-## GitHub OAuth2 配置说明
+## LDAP 目录服务
 
-### 步骤 1: 创建 GitHub OAuth App
-
-1. 访问 https://github.com/settings/developers
-2. 点击 "New OAuth App"
-3. 填写:
-   - **Application name**: `Spring Cloud Demo`
-   - **Homepage URL**: `http://localhost:7573`
-   - **Authorization callback URL**: `http://localhost:7573/login/oauth2/code/github`
-4. 点击 "Register application"
-5. 复制 **Client ID** 和 **Client Secret**
-
-### 步骤 2: 配置到项目中
-
-编辑 `uaa/src/main/resources/application.yml` 和 `web/src/main/resources/application.yml`，替换以下内容:
-
-```yaml
-spring:
-  security:
-    oauth2:
-      client:
-        registration:
-          github:
-            client-id: 你申请的Client ID
-            client-secret: 你申请的Client Secret
-```
-
-同时修改 `docker-compose.yml` 中的 `GITHUB_CLIENT_ID` 和 `GITHUB_CLIENT_SECRET` 环境变量。
-
-### 步骤 3: 测试 GitHub 登录
+GitHub OAuth 配置已在 `docker-compose.env` 中预置，无需额外配置。
 
 1. 访问 http://localhost:7573/web/login
 2. 点击 "GitHub" 标签页

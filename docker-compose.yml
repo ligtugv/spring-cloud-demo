@@ -50,11 +50,12 @@ services:
       - ldap_config:/etc/ldap/slapd.d
     networks:
       - microservice-net
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "ldapsearch", "-x", "-H", "ldap://localhost", "-b", "dc=luban-cae,dc=com", "(objectClass=*)"]
+      test: ["CMD-SHELL", "ldapwhoami -x -H ldap://localhost || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 20
 
   ldap-init:
     image: osixia/openldap:1.5.0
