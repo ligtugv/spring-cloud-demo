@@ -1,0 +1,7 @@
+dn: ou=users,dc=luban-cae,dc=com
+objectClass: organizationalUnit
+ou: users
+
+dn: ou=groups,dc=luban-cae,dc=com
+objectClass: organizationalUnit
+ou: groups

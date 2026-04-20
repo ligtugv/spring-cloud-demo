@@ -1,0 +1,11 @@
+dn: uid=ldap_user_1,ou=users,dc=luban-cae,dc=com
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: ldap_user_1
+sn: User1
+uid: ldap_user_1
+userPassword: {SSHA}WpJkjbs3qxbqxt+NQy/VbsyOoQiEbf2M
+uidNumber: 10001
+gidNumber: 10001
+homeDirectory: /home/ldap_user_1

@@ -1,0 +1,6 @@
+FROM alpine:3.18
+RUN apk add --no-cache openldap-clients ldap-utils curl bash
+WORKDIR /scripts
+COPY init-ldap.sh /scripts/init-ldap.sh
+RUN chmod +x /scripts/init-ldap.sh
+ENTRYPOINT ["/scripts/init-ldap.sh"]

@@ -1,0 +1,260 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: microservice-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_INITDB_SKIP_TZINFO: "1"
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./scripts/init-mysql.sql:/docker-entrypoint-initdb.d/init-mysql.sql:ro
+    networks:
+      - microservice-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    command: --default-authentication-plugin=mysql_native_password --skip-log-bin
+
+  redis:
+    image: redis:7-alpine
+    container_name: microservice-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - microservice-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  openldap:
+    image: osixia/openldap:1.5.0
+    container_name: microservice-openldap
+    environment:
+      LDAP_ORGANISATION: Luban CAE
+      LDAP_DOMAIN: luban-cae.com
+      LDAP_BASE_DN: dc=luban-cae,dc=com
+      LDAP_ADMIN_PASSWORD: admin_secret
+    ports:
+      - "3389:389"
+      - "3636:636"
+    volumes:
+      - ldap_data:/var/lib/openldap
+      - ldap_config:/etc/ldap/slapd.d
+    networks:
+      - microservice-net
+    healthcheck:
+      test: ["CMD", "ldapwhoami", "-H", "ldap://localhost", "-x", "-D", "cn=admin,dc=luban-cae,dc=com", "-w", "admin_secret"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  ldap-init:
+    image: osixia/openldap:1.5.0
+    container_name: microservice-ldap-init
+    command: ["sh", "/init-ldap.sh"]
+    volumes:
+      - ./scripts/init-ldap.sh:/init-ldap.sh:ro
+    environment:
+      LDAP_HOST: openldap
+      LDAP_PORT: "389"
+      LDAP_ADMIN_PASSWORD: admin_secret
+    depends_on:
+      openldap:
+        condition: service_healthy
+    networks:
+      - microservice-net
+    restart: "no"
+
+  ldap-admin:
+    image: osixia/phpldapadmin:0.9.0
+    container_name: microservice-ldap-admin
+    environment:
+      PHPLDAPADMIN_HTTPS: "false"
+      PHPLDAPADMIN_LDAP_HOSTS: openldap
+    ports:
+      - "8090:80"
+    depends_on:
+      - openldap
+    networks:
+      - microservice-net
+
+  discovery:
+    build:
+      context: ./discovery
+      dockerfile: Dockerfile
+    container_name: microservice-discovery
+    ports:
+      - "18761:8761"
+    networks:
+      - microservice-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+
+  config:
+    build:
+      context: ./config
+      dockerfile: Dockerfile
+    container_name: microservice-config
+    ports:
+      - "18888:8888"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      discovery:
+        condition: service_healthy
+    networks:
+      - microservice-net
+
+  uaa:
+    build:
+      context: ./uaa
+      dockerfile: Dockerfile
+    container_name: microservice-uaa
+    ports:
+      - "19000:9000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/uaa_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root_password
+      SPRING_LDAP_URLS: ldap://openldap:389
+      SPRING_LDAP_BASE: dc=luban-cae,dc=com
+      SPRING_LDAP_MANAGER_DN: cn=admin,dc=luban-cae,dc=com
+      SPRING_LDAP_MANAGER_PASSWORD: admin_secret
+      SERVER_PORT: 9000
+      GITHUB_CLIENT_ID: Ov23lit971NDwRkcC7UJ
+      GITHUB_CLIENT_SECRET: 0f5e7039506c6b5854f674931b70a8de673ed80d
+    depends_on:
+      mysql:
+        condition: service_healthy
+      openldap:
+        condition: service_healthy
+      discovery:
+        condition: service_healthy
+    networks:
+      - microservice-net
+
+  product:
+    build:
+      context: ./product
+      dockerfile: Dockerfile
+    container_name: microservice-product
+    ports:
+      - "18082:8082"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    depends_on:
+      mysql:
+        condition: service_healthy
+      discovery:
+        condition: service_healthy
+      uaa:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/product_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root_password
+      SERVER_PORT: 8082
+    networks:
+      - microservice-net
+
+  cart:
+    build:
+      context: ./cart
+      dockerfile: Dockerfile
+    container_name: microservice-cart
+    ports:
+      - "18083:8083"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      discovery:
+        condition: service_healthy
+      uaa:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/cart_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root_password
+      SERVER_PORT: 8083
+    networks:
+      - microservice-net
+
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: microservice-gateway
+    ports:
+      - "7573:7573"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      discovery:
+        condition: service_healthy
+      uaa:
+        condition: service_started
+      product:
+        condition: service_started
+      cart:
+        condition: service_started
+    networks:
+      - microservice-net
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: microservice-web
+    ports:
+      - "18080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      APP_UAA_URL: http://uaa:9000
+      GITHUB_CLIENT_ID: Ov23lit971NDwRkcC7UJ
+      GITHUB_CLIENT_SECRET: 0f5e7039506c6b5854f674931b70a8de673ed80d
+    depends_on:
+      - gateway
+    networks:
+      - microservice-net
+
+networks:
+  microservice-net:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  ldap_data:
+  ldap_config:
+  redis_data:

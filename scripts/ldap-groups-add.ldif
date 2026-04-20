@@ -1,0 +1,16 @@
+dn: cn=PRODUCT_ADMIN,ou=groups,dc=luban-cae,dc=com
+objectClass: groupOfNames
+cn: PRODUCT_ADMIN
+member: uid=ldap_adm_1,ou=users,dc=luban-cae,dc=com
+
+dn: cn=EDITOR,ou=groups,dc=luban-cae,dc=com
+objectClass: groupOfNames
+cn: EDITOR
+member: uid=ldap_editor_1,ou=users,dc=luban-cae,dc=com
+
+dn: cn=USER,ou=groups,dc=luban-cae,dc=com
+objectClass: groupOfNames
+cn: USER
+member: uid=ldap_user_1,ou=users,dc=luban-cae,dc=com
+member: uid=ldap_editor_1,ou=users,dc=luban-cae,dc=com
+member: uid=ldap_adm_1,ou=users,dc=luban-cae,dc=com

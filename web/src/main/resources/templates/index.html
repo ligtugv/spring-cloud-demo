@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微服务 DEMO - 产品管理</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; min-height: 100vh; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 16px 40px; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 20px; }
+        .header-right { display: flex; align-items: center; gap: 15px; }
+        .user-info { font-size: 14px; opacity: 0.9; }
+        .btn-logout { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 7px 18px; border-radius: 6px; cursor: pointer; font-size: 14px; text-decoration: none; }
+        .btn-logout:hover { background: rgba(255,255,255,0.3); }
+
+        /* Nav tabs */
+        .nav-tabs { background: white; border-bottom: 2px solid #e5e7eb; display: flex; padding: 0 40px; }
+        .nav-tab { padding: 14px 24px; font-size: 15px; font-weight: 500; color: #6b7280; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+        .nav-tab:hover { color: #667eea; }
+        .nav-tab.active { color: #667eea; border-bottom-color: #667eea; }
+        .nav-tab .badge { background: #ef4444; color: white; font-size: 11px; padding: 1px 6px; border-radius: 10px; font-weight: 600; }
+
+        .container { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
+        .card { background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 28px; margin-bottom: 20px; }
+        .card h2 { font-size: 17px; color: #333; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 2px solid #f0f0f0; }
+        .card h2 .sub { font-size: 13px; color: #999; font-weight: normal; margin-left: 8px; }
+        .form-row { display: flex; gap: 10px; margin-bottom: 18px; }
+        .form-row input { flex: 1; padding: 11px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; }
+        .form-row input:focus { outline: none; border-color: #667eea; }
+        .btn { padding: 10px 22px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(102,126,234,0.4); }
+        .btn-success { background: #22c55e; color: white; }
+        .btn-success:hover { background: #16a34a; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-warning:hover { background: #d97706; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8f9fa; padding: 10px 14px; text-align: left; font-weight: 600; color: #555; font-size: 13px; }
+        td { padding: 12px 14px; border-bottom: 1px solid #f0f0f0; color: #333; font-size: 14px; }
+        tr:hover { background: #fafafa; }
+        .role-tag { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 12px; font-weight: 500; margin: 1px; }
+        .role-user { background: #dbeafe; color: #1d4ed8; }
+        .role-editor { background: #fef3c7; color: #d97706; }
+        .role-admin { background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); color: #15803d; border: 1px solid #86efac; }
+        .message { padding: 11px 15px; border-radius: 8px; margin-bottom: 12px; font-size: 14px; display: none; }
+        .message.success { background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; }
+        .message.error { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+        .actions { display: flex; gap: 6px; }
+        .info-bar { background: #f0f9ff; border: 1px solid #bae6fd; color: #0369a1; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; }
+
+        /* RBAC Panel */
+        .rbac-row { display: flex; gap: 16px; margin-bottom: 20px; }
+        .rbac-left { flex: 1; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 12px; padding: 18px; color: white; }
+        .rbac-right { flex: 1.2; background: white; border-radius: 12px; padding: 18px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+        .rbac-h3 { font-size: 12px; color: #94a3b8; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+        .role-node { display: flex; align-items: center; padding: 8px 12px; border-radius: 7px; margin-bottom: 6px; font-size: 13px; font-weight: 500; }
+        .role-node.active { background: rgba(255,255,255,0.15); box-shadow: 0 0 0 2px rgba(255,255,255,0.25); }
+        .role-node.inactive { opacity: 0.4; }
+        .role-icon { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 8px; font-size: 10px; font-weight: 700; }
+        .perm-row { display: flex; align-items: center; padding: 6px 0; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #475569; }
+        .perm-row:last-child { border-bottom: none; }
+        .perm-check { width: 36px; text-align: center; font-size: 14px; }
+        .perm-check.yes { color: #22c55e; }
+        .perm-check.no { color: #e2e8f0; }
+        .perm-badge { font-size: 10px; padding: 1px 5px; border-radius: 8px; margin-left: 5px; vertical-align: middle; }
+        .perm-badge.mine { background: #dbeafe; color: #1d4ed8; }
+        .perm-badge.admin { background: #dcfce7; color: #15803d; }
+
+        /* Cart */
+        .cart-item { display: flex; align-items: center; padding: 14px 0; border-bottom: 1px solid #f0f0f0; }
+        .cart-item:last-child { border-bottom: none; }
+        .cart-item-info { flex: 1; }
+        .cart-item-name { font-weight: 600; font-size: 15px; color: #333; }
+        .cart-item-meta { font-size: 13px; color: #888; margin-top: 3px; }
+        .cart-item-qty { display: flex; align-items: center; gap: 8px; }
+        .qty-btn { width: 28px; height: 28px; border: 1px solid #e0e0e0; border-radius: 6px; background: white; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+        .qty-btn:hover { border-color: #667eea; color: #667eea; }
+        .cart-summary { background: #f8fafc; border-radius: 8px; padding: 16px; margin-top: 16px; }
+        .cart-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: 700; color: #333; margin-bottom: 14px; }
+        .empty-state { text-align: center; padding: 40px; color: #999; font-size: 15px; }
+
+        /* Purchase history */
+        .purchase-item { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+        .purchase-item:last-child { border-bottom: none; }
+        .purchase-badge { background: #dcfce7; color: #16a34a; font-size: 11px; padding: 2px 8px; border-radius: 6px; font-weight: 600; margin-left: 8px; }
+
+        /* Dashboard */
+        .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+        .stat-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); text-align: center; }
+        .stat-num { font-size: 32px; font-weight: 700; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .stat-label { font-size: 13px; color: #888; margin-top: 4px; }
+        .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .chart-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+        .chart-title { font-size: 15px; font-weight: 600; color: #333; margin-bottom: 12px; }
+        .chart-wrap { height: 260px; }
+        .admin-only { display: none; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>微服务 DEMO</h1>
+    <div class="header-right" th:if="${isLoggedIn}">
+        <div class="user-info">
+            <div><span th:text="${username}">User</span></div>
+            <div>
+                <th:block th:each="role : ${#strings.arraySplit(roles, ',')}">
+                    <span class="role-tag" th:if="${#strings.contains(role, 'USER')}" th:classappend="${#strings.contains(role, 'PRODUCT_ADMIN')} ? 'role-admin' : (${#strings.contains(role, 'EDITOR')} ? 'role-editor' : 'role-user')" th:text="${role}">ROLE</span>
+                </th:block>
+            </div>
+        </div>
+        <a href="/logout" class="btn-logout">退出登录</a>
+    </div>
+    <div class="header-right" th:unless="${isLoggedIn}">
+        <a href="/login" class="btn-logout">登录</a>
+    </div>
+</div>
+
+<div class="nav-tabs" id="navTabs" style="display:none;">
+    <div class="nav-tab active" data-tab="products" onclick="switchTab('products')">&#128230; 产品管理</div>
+    <div class="nav-tab" data-tab="cart" onclick="switchTab('cart')">
+        &#128722; 购物车 <span class="badge" id="cartBadge" style="display:none;">0</span>
+    </div>
+    <div class="nav-tab admin-only" data-tab="dashboard" onclick="switchTab('dashboard')">&#128202; 数据看板</div>
+</div>
+
+<div class="container">
+    <!-- 未登录 -->
+    <div th:unless="${isLoggedIn}">
+        <div class="card">
+            <div style="text-align:center;padding:60px 20px;">
+                <h2 style="border:none;margin-bottom:15px;">请先登录</h2>
+                <p style="color:#666;margin-bottom:25px;">您需要登录后才能访问产品管理功能</p>
+                <a href="/login" class="btn btn-primary">前往登录</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 已登录 -->
+    <div th:if="${isLoggedIn}">
+        <div class="info-bar">
+            Gateway: <strong th:text="${gatewayUrl}">http://localhost:7573</strong>
+            | 当前用户: <strong th:text="${username}">-</strong>
+        </div>
+
+        <!-- RBAC 面板 -->
+        <div class="rbac-row">
+            <div class="rbac-left">
+                <div class="rbac-h3">角色层级</div>
+                <div id="roleTree"></div>
+            </div>
+            <div class="rbac-right">
+                <div class="rbac-h3">权限矩阵</div>
+                <div id="permTable"></div>
+            </div>
+        </div>
+
+        <!-- ========== 产品管理 tab ========== -->
+        <div class="tab-content active" id="tab-products">
+            <div class="card">
+                <h2>添加产品</h2>
+                <div class="form-row">
+                    <input type="text" id="productName" placeholder="输入产品名称">
+                    <button class="btn btn-primary" onclick="createProduct()">添加</button>
+                </div>
+                <div id="msg-success" class="message success">操作成功</div>
+                <div id="msg-error" class="message error">操作失败</div>
+            </div>
+
+            <div class="card">
+                <h2>产品列表 <span class="sub" id="productCount"></span></h2>
+                <table>
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>产品名称</th>
+                        <th>创建者</th>
+                        <th>库存</th>
+                        <th>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody id="productList">
+                    <tr><td colspan="4" style="text-align:center;color:#999;">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ========== 购物车 tab ========== -->
+        <div class="tab-content" id="tab-cart">
+            <div class="card">
+                <h2>我的购物车 <span class="sub">Redis 缓存 · MySQL 持久化</span></h2>
+                <div id="cartContainer">
+                    <div class="empty-state" id="cartEmpty">购物车是空的，去产品列表添加商品吧</div>
+                    <div id="cartItems"></div>
+                </div>
+                <div class="cart-summary" id="cartSummary" style="display:none;">
+                    <div class="cart-total">
+                        <span>合计</span>
+                        <span id="cartTotal">¥0.00</span>
+                    </div>
+                    <button class="btn btn-success" style="width:100%;" onclick="doCheckout()">&#9989; 确认购买</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>购买记录</h2>
+                <div id="purchaseContainer">
+                    <div class="empty-state" id="purchaseEmpty">暂无购买记录</div>
+                    <div id="purchaseList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 数据看板 tab (ADMIN) ========== -->
+        <div class="tab-content" id="tab-dashboard">
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-num" id="statProducts">-</div>
+                    <div class="stat-label">产品总数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-num" id="statUsers">-</div>
+                    <div class="stat-label">创建用户数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-num" id="statPurchases">-</div>
+                    <div class="stat-label">购买记录数</div>
+                </div>
+            </div>
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <div class="chart-title">产品日创建量</div>
+                    <div class="chart-wrap" id="chartDaily"></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">用户创建量 Top</div>
+                    <div class="chart-wrap" id="chartByCreator"></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">购买量 Top 产品</div>
+                    <div class="chart-wrap" id="chartPurchase"></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">用户购买额 Top</div>
+                    <div class="chart-wrap" id="chartUserPurchase"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    let accessToken = /*[[${token}]]*/ '';
+    let username = /*[[${username}]]*/ '';
+    let rolesRaw = /*[[${roles}]]*/ '[]';
+    let roles = (typeof rolesRaw === 'string' && rolesRaw.startsWith('[')) ? JSON.parse(rolesRaw) : (Array.isArray(rolesRaw) ? rolesRaw : []);
+    let isProductAdmin = roles.includes('PRODUCT_ADMIN');
+    let isEditor = roles.includes('EDITOR') || isProductAdmin;
+
+    // ========== Tab Navigation ==========
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+        document.getElementById('tab-' + tab).classList.add('active');
+        document.querySelector('[data-tab="' + tab + '"]').classList.add('active');
+        if (tab === 'cart') loadCart();
+        if (tab === 'dashboard') loadDashboard();
+    }
+
+    function showMsg(type, msg) {
+        let el = document.getElementById(type === 'success' ? 'msg-success' : 'msg-error');
+        el.textContent = msg;
+        el.style.display = 'block';
+        setTimeout(() => el.style.display = 'none', 3000);
+    }
+
+    // ========== RBAC Panel ==========
+    function renderRBACPanel() {
+        let navTabs = document.getElementById('navTabs');
+        navTabs.style.display = 'flex';
+        if (isProductAdmin) document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
+
+        let roleTree = document.getElementById('roleTree');
+        let allRoles = [
+            { name: 'PRODUCT_ADMIN', icon: 'A', desc: '删任意产品 / 加库存 / 查看统计', color: '#16a34a' },
+            { name: 'EDITOR', icon: 'E', desc: '删自己创建的产品 / 加库存', color: '#d97706' },
+            { name: 'USER', icon: 'U', desc: '仅可浏览', color: '#1d4ed8' }
+        ];
+        roleTree.innerHTML = allRoles.map(r => {
+            let active = roles.includes(r.name);
+            return `<div class="role-node ${active ? 'active' : 'inactive'}">
+                <div class="role-icon" style="background:${r.color}25;color:${r.color};border:1px solid ${r.color}40;">${r.icon}</div>
+                <span>${r.name}</span>
+                <span style="margin-left:auto;font-size:11px;color:#94a3b8;">${active ? '&#10003; ' + r.desc : r.desc}</span>
+            </div>`;
+        }).join('');
+
+        let permTable = document.getElementById('permTable');
+        let perms = [
+            { action: '浏览产品', editor: true, admin: true },
+            { action: '添加产品', editor: true, admin: true },
+            { action: '修改产品', editor: true, admin: true },
+            { action: '增加库存', editor: true, admin: true },
+            { action: '删除自己的产品', editor: true, admin: true },
+            { action: '删除任意产品', editor: false, admin: true },
+            { action: '加入购物车', editor: true, admin: true },
+            { action: '购买产品', editor: true, admin: true },
+            { action: '查看数据看板', editor: false, admin: true }
+        ];
+        let isUA = roles.includes('USER') && !roles.includes('EDITOR') && !roles.includes('PRODUCT_ADMIN');
+        let isEA = roles.includes('EDITOR') && !roles.includes('PRODUCT_ADMIN');
+        let isAA = roles.includes('PRODUCT_ADMIN');
+
+        permTable.innerHTML = '<div style="display:flex;font-size:11px;color:#94a3b8;padding-bottom:6px;border-bottom:1px solid #e2e8f0;margin-bottom:4px;">' +
+            '<div style="flex:1;">操作</div><div style="width:48px;text-align:center;">USER</div><div style="width:48px;text-align:center;">EDITOR</div><div style="width:48px;text-align:center;">ADMIN</div></div>' +
+            perms.map(p => {
+                let ed = isEA || isAA;
+                let ad = isAA;
+                let edCell = ed && p.editor ? '&#10003;' : '&#10005;';
+                let adCell = ad && p.admin ? '&#10003;' : '&#10005;';
+                let edCls = ed && p.editor ? 'yes' : 'no';
+                let adCls = ad && p.admin ? 'yes' : 'no';
+                let mark = (isEA && p.editor && !isAA) ? '<span class="perm-badge mine">我</span>' : ((isAA && p.admin) ? '<span class="perm-badge admin">我</span>' : '');
+                return `<div class="perm-row">
+                    <div class="perm-action">${p.action} ${mark}</div>
+                    <div class="perm-check no">&#10005;</div>
+                    <div class="perm-check ${edCls}">${edCell}</div>
+                    <div class="perm-check ${adCls}">${adCell}</div>
+                </div>`;
+            }).join('');
+    }
+
+    // ========== Product List ==========
+    function loadProducts() {
+        if (!accessToken) return;
+        fetch('/api/products', { headers: { 'Authorization': 'Bearer ' + accessToken } })
+        .then(r => { if (r.ok) return r.json(); return []; })
+        .then(data => { if (Array.isArray(data)) renderProducts(data); }).catch(() => {});
+    }
+
+    function renderProducts(products) {
+        let tbody = document.getElementById('productList');
+        document.getElementById('productCount').textContent = '共 ' + products.length + ' 条';
+        if (!products || products.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#999;">暂无产品</td></tr>';
+            return;
+        }
+        tbody.innerHTML = products.map(p => {
+            let canDelete = isProductAdmin || (isEditor && p.createdBy === username);
+            let deleteBtn = canDelete
+                ? '<button class="btn btn-danger btn-sm" onclick="deleteProduct(' + p.id + ')">删除</button>'
+                : (isEditor ? '<span style="color:#ccc;font-size:11px;">无权限</span>' : '');
+            let stockEditBtn = isProductAdmin
+                ? '<button class="btn btn-sm" style="background:#f3f4f6;color:#374151;border:1px solid #d1d5db;" onclick="editStock(' + p.id + ',' + (p.stock || 0) + ')">&#x2795; 库存</button>'
+                : '';
+            let badge = p.createdBy === username ? ' <span style="background:#dbeafe;color:#1d4ed8;padding:1px 5px;border-radius:8px;font-size:11px;">我的</span>' : '';
+            let cartBtn = '<button class="btn btn-warning btn-sm" onclick="addToCart(' + p.id + ',\'' + escapeHtml(p.name) + '\')">加入购物车</button>';
+            return '<tr>' +
+                '<td>' + p.id + '</td>' +
+                '<td>' + escapeHtml(p.name) + badge + '</td>' +
+                '<td style="color:#888;font-size:13px;">' + (p.createdBy ? escapeHtml(p.createdBy) : '-') + '</td>' +
+                '<td><span id="stock-' + p.id + '" style="font-weight:600;color:' + ((p.stock || 0) > 0 ? '#16a34a' : '#ef4444') + ';">' + (p.stock || 0) + '</span></td>' +
+                '<td class="actions">' + stockEditBtn + ' ' + deleteBtn + ' ' + cartBtn + '</td>' +
+                '</tr>';
+        }).join('');
+    }
+
+    function createProduct() {
+        let name = document.getElementById('productName').value.trim();
+        if (!name) { showMsg('error', '请输入产品名称'); return; }
+        if (!accessToken) { showMsg('error', '请先登录'); return; }
+        fetch('/api/products', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json; charset=utf-8' },
+            body: JSON.stringify({ name: name })
+        }).then(r => {
+            if (r.ok) { showMsg('success', '产品添加成功（默认库存 10）'); document.getElementById('productName').value = ''; loadProducts(); }
+            else showMsg('error', '添加失败，权限不足或请先登录');
+        }).catch(() => showMsg('error', '网络错误'));
+    }
+
+    function deleteProduct(id) {
+        if (!confirm('确认删除产品 #' + id + '?')) return;
+        fetch('/api/products/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + accessToken } })
+        .then(r => {
+            if (r.ok) { showMsg('success', '删除成功'); loadProducts(); }
+            else { showMsg('error', '删除失败，权限不足'); }
+        }).catch(() => showMsg('error', '网络错误'));
+    }
+
+    function editStock(productId, currentStock) {
+        let input = prompt('请输入要增加的库存数量（当前: ' + currentStock + '）:', currentStock > 0 ? String(currentStock) : '10');
+        if (input === null) return;
+        let qty = parseInt(input);
+        if (isNaN(qty) || qty <= 0) { showMsg('error', '请输入正整数'); return; }
+        fetch('/api/products/' + productId + '/add-stock', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ quantity: qty })
+        }).then(r => {
+            if (r.ok) return r.json();
+            return Promise.reject({ ok: false, status: r.status });
+        }).then(data => {
+            let newStock = currentStock + qty;
+            let el = document.getElementById('stock-' + productId);
+            if (el) { el.textContent = newStock; el.style.color = '#16a34a'; }
+            showMsg('success', '库存已增加 ' + qty + '，当前 ' + newStock);
+        }).catch(e => {
+            if (e && e.status === 403) showMsg('error', '无权限操作此产品（仅创建者或管理员可加库存）');
+            else if (e && e.status === 404) showMsg('error', '产品不存在');
+            else showMsg('error', '增加库存失败');
+        });
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        let div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    // ========== Cart ==========
+    function addToCart(productId, productName) {
+        if (!accessToken) { showMsg('error', '请先登录'); return; }
+        fetch('/api/products/' + productId + '/stock', { headers: { 'Authorization': 'Bearer ' + accessToken } })
+        .then(r => r.ok ? r.json() : null)
+        .then(stockData => {
+            let currentStock = stockData ? (stockData.stock || 0) : null;
+            if (currentStock !== null && currentStock <= 0) {
+                showMsg('error', '该产品库存为 0，无法加入购物车');
+                return;
+            }
+            return fetch('/api/cart', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productId: productId, productName: productName, price: 99.00, quantity: 1 })
+            });
+        }).then(r => {
+            if (!r) return;
+            if (r && r.ok) return r.json();
+            return Promise.reject(new Error('加入购物车失败'));
+        }).then(() => {
+            showMsg('success', '已加入购物车');
+            updateCartBadge();
+        }).catch(e => {
+            if (e && e.message === '加入购物车失败') showMsg('error', e.message);
+            else showMsg('error', '加入购物车失败，请检查网络');
+        });
+    }
+
+    function loadCart() {
+        if (!accessToken) return;
+        fetch('/api/cart', { headers: { 'Authorization': 'Bearer ' + accessToken } })
+        .then(r => { if (r.ok) return r.json(); return []; })
+        .then(data => renderCart(Array.isArray(data) ? data : [])).catch(() => {});
+        loadPurchases();
+    }
+
+    function renderCart(items) {
+        let empty = document.getElementById('cartEmpty');
+        let itemsEl = document.getElementById('cartItems');
+        let summary = document.getElementById('cartSummary');
+        if (!items || items.length === 0) {
+            empty.style.display = 'block';
+            itemsEl.innerHTML = '';
+            summary.style.display = 'none';
+            return;
+        }
+        empty.style.display = 'none';
+        summary.style.display = 'block';
+        let total = 0;
+        itemsEl.innerHTML = items.map(item => {
+            let subtotal = parseFloat(item.unitPrice) * item.quantity;
+            total += subtotal;
+            return `<div class="cart-item">
+                <div class="cart-item-info">
+                    <div class="cart-item-name">${escapeHtml(item.productName)}</div>
+                    <div class="cart-item-meta">¥${parseFloat(item.unitPrice).toFixed(2)} × ${item.quantity}</div>
+                </div>
+                <div class="cart-item-qty">
+                    <button class="qty-btn" onclick="updateCartQty(${item.productId}, ${item.quantity - 1})">−</button>
+                    <span>${item.quantity}</span>
+                    <button class="qty-btn" onclick="updateCartQty(${item.productId}, ${item.quantity + 1})">+</button>
+                </div>
+                <div style="width:80px;text-align:right;font-weight:600;color:#333;">¥${subtotal.toFixed(2)}</div>
+                <button class="btn btn-danger btn-sm" style="margin-left:8px;" onclick="removeFromCart(${item.productId})">移除</button>
+            </div>`;
+        }).join('');
+        document.getElementById('cartTotal').textContent = '¥' + total.toFixed(2);
+        updateCartBadge();
+    }
+
+    function updateCartQty(productId, qty) {
+        if (qty <= 0) { removeFromCart(productId); return; }
+        fetch('/api/cart/' + productId, {
+            method: 'PUT',
+            headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ quantity: qty })
+        }).then(r => { if (r.ok) loadCart(); }).catch(() => {});
+    }
+
+    function removeFromCart(productId) {
+        fetch('/api/cart/' + productId, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + accessToken } })
+        .then(r => { if (r.ok) loadCart(); }).catch(() => {});
+    }
+
+    function doCheckout() {
+        if (!confirm('确认购买购物车中的所有商品？')) return;
+        fetch('/api/cart/checkout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + accessToken } })
+        .then(r => r.json().then(d => ({ ok: r.ok, status: r.status, data: d })))
+        .then(result => {
+            if (result.ok) {
+                loadCart();
+                loadProducts();
+                if (result.data.warnings && result.data.warnings.length > 0) {
+                    let msg = result.data.warnings.join('；');
+                    showMsg('error', msg);
+                } else {
+                    showMsg('success', '购买成功！订单已生成');
+                }
+            } else {
+                let msg = result.data && result.data.message ? result.data.message : '购买失败';
+                showMsg('error', msg);
+                loadCart();
+            }
+        }).catch(() => { showMsg('error', '购买失败，请检查网络'); loadCart(); });
+    }
+
+    function updateCartBadge() {
+        let badge = document.getElementById('cartBadge');
+        fetch('/api/cart', { headers: { 'Authorization': 'Bearer ' + accessToken } })
+        .then(r => { if (r.ok) return r.json(); return []; })
+        .then(data => {
+            let n = Array.isArray(data) ? data.length : 0;
+            if (n > 0) { badge.textContent = n; badge.style.display = 'inline'; }
+            else badge.style.display = 'none';
+        }).catch(() => {});
+    }
+
+    // ========== Purchase History ==========
+    function loadPurchases() {
+        if (!accessToken) return;
+        fetch('/api/cart/purchases', { headers: { 'Authorization': 'Bearer ' + accessToken } })
+        .then(r => { if (r.ok) return r.json(); return []; })
+        .then(data => renderPurchases(Array.isArray(data) ? data : [])).catch(() => {});
+    }
+
+    function renderPurchases(records) {
+        let empty = document.getElementById('purchaseEmpty');
+        let list = document.getElementById('purchaseList');
+        if (!records || records.length === 0) {
+            empty.style.display = 'block';
+            list.innerHTML = '';
+            return;
+        }
+        empty.style.display = 'none';
+        list.innerHTML = records.map(r => {
+            let date = r.createdAt ? r.createdAt.replace('T', ' ').substring(0, 19) : '-';
+            return `<div class="purchase-item">
+                <div style="flex:1;">
+                    <div style="font-weight:600;font-size:15px;">${escapeHtml(r.productName)} <span class="purchase-badge">COMPLETED</span></div>
+                    <div style="font-size:12px;color:#888;margin-top:3px;">${date} · 数量 ${r.quantity} · 单价 ¥${parseFloat(r.totalAmount / r.quantity).toFixed(2)}</div>
+                </div>
+                <div style="font-size:18px;font-weight:700;color:#22c55e;">¥${parseFloat(r.totalAmount).toFixed(2)}</div>
+            </div>`;
+        }).join('');
+    }
+
+    // ========== Dashboard (ADMIN only) ==========
+    let chartDaily, chartCreator, chartPurchase, chartUser;
+    function loadDashboard() {
+        if (!isProductAdmin) return;
+        if (!chartDaily) {
+            chartDaily = echarts.init(document.getElementById('chartDaily'));
+            chartCreator = echarts.init(document.getElementById('chartByCreator'));
+            chartPurchase = echarts.init(document.getElementById('chartPurchase'));
+            chartUser = echarts.init(document.getElementById('chartUserPurchase'));
+        }
+        loadStats();
+    }
+
+    function loadStats() {
+        fetch('/api/stats/products/by-day', { headers: { 'Authorization': 'Bearer ' + accessToken } })
+        .then(r => r.json()).then(data => {
+            let arr = Array.isArray(data) ? data : [];
+            let dates = arr.map(d => d[0] || '').reverse().slice(-14);
+            let counts = arr.map(d => parseInt(d[1]) || 0).reverse().slice(-14);
+            chartDaily.setOption({
+                tooltip: { trigger: 'axis' },
+                xAxis: { type: 'category', data: dates, axisLabel: { fontSize: 10, rotate: 30 } },
+                yAxis: { type: 'value', minInterval: 1 },
+                series: [{ name: '产品数', type: 'bar', data: counts, itemStyle: { color: '#667eea' }, barRadius: [4, 4, 0, 0] }]
+            });
+        }).catch(() => {});
+
+        fetch('/api/stats/products/by-creator', { headers: { 'Authorization': 'Bearer ' + accessToken } })
+        .then(r => r.json()).then(data => {
+            let arr = Array.isArray(data) ? data : [];
+            let creators = arr.map(d => d[0] || '').slice(0, 8);
+            let counts = arr.map(d => parseInt(d[1]) || 0).slice(0, 8);
+            document.getElementById('statProducts').textContent = counts.reduce((a, b) => a + b, 0);
+            document.getElementById('statUsers').textContent = creators.length;
+            chartCreator.setOption({
+                tooltip: { trigger: 'axis' },
+                xAxis: { type: 'category', data: creators },
+                yAxis: { type: 'value', minInterval: 1 },
+                series: [{ name: '产品数', type: 'bar', data: counts, itemStyle: { color: '#764ba2' }, barRadius: [4, 4, 0, 0] }]
+            });
+        }).catch(() => {});
+
+        fetch('/api/cart/stats/products', { headers: { 'Authorization': 'Bearer ' + accessToken } })
+        .then(r => r.json()).then(data => {
+            let arr = Array.isArray(data) ? data : [];
+            let names = arr.map(d => (d[1] || '').substring(0, 10)).slice(0, 8);
+            let counts = arr.map(d => parseInt(d[2]) || 0).slice(0, 8);
+            document.getElementById('statPurchases').textContent = counts.reduce((a, b) => a + b, 0);
+            chartPurchase.setOption({
+                tooltip: { trigger: 'axis' },
+                xAxis: { type: 'category', data: names },
+                yAxis: { type: 'value', minInterval: 1 },
+                series: [{ name: '购买量', type: 'bar', data: counts, itemStyle: { color: '#f59e0b' }, barRadius: [4, 4, 0, 0] }]
+            });
+        }).catch(() => {});
+
+        fetch('/api/cart/stats/users', { headers: { 'Authorization': 'Bearer ' + accessToken } })
+        .then(r => r.json()).then(data => {
+            let arr = Array.isArray(data) ? data : [];
+            let users = arr.map(d => d[0] || '').slice(0, 8);
+            let amounts = arr.map(d => parseFloat(d[2]) || 0).slice(0, 8);
+            chartUser.setOption({
+                tooltip: { trigger: 'axis', formatter: p => p[0].name + '<br/>¥' + parseFloat(p[0].value).toFixed(2) },
+                xAxis: { type: 'category', data: users },
+                yAxis: { type: 'value' },
+                series: [{ name: '购买额', type: 'bar', data: amounts, itemStyle: { color: '#22c55e' }, barRadius: [4, 4, 0, 0] }]
+            });
+        }).catch(() => {});
+    }
+
+    // ========== Init ==========
+    if (accessToken) {
+        renderRBACPanel();
+        loadProducts();
+        updateCartBadge();
+    }
+</script>
+</body>
+</html>

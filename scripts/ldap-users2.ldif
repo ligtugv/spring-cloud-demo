@@ -1,0 +1,23 @@
+dn: uid=ldap_editor_1,ou=users,dc=luban-cae,dc=com
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: ldap_editor_1
+sn: Editor1
+uid: ldap_editor_1
+userPassword: {SSHA}8B3nR9qT5wZ2kM7xA4vB1C6D0eF3gH2iJ
+uidNumber: 10002
+gidNumber: 10002
+homeDirectory: /home/ldap_editor_1
+
+dn: uid=ldap_adm_1,ou=users,dc=luban-cae,dc=com
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: ldap_adm_1
+sn: Admin1
+uid: ldap_adm_1
+userPassword: {SSHA}2dE5fG8hJ1kM4nP7rS0tU3vW6xY9zA0bC
+uidNumber: 10003
+gidNumber: 10003
+homeDirectory: /home/ldap_adm_1

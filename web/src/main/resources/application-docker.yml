@@ -1,0 +1,24 @@
+server:
+  port: 8080
+  tomcat:
+    max-http-header-size: 32768
+
+spring:
+  application:
+    name: web
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://uaa:9000/.well-known/jwks.json
+
+app:
+  gateway-url: http://microservice-gateway:7573
+  uaa-url: http://microservice-uaa:9000
+
+logging:
+  level:
+    root: INFO
+    com.example.web: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG

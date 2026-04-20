@@ -1,0 +1,20 @@
+dn: cn=USER,ou=groups,dc=luban-cae,dc=com
+objectClass: groupOfNames
+cn: USER
+description: Regular user role
+member: uid=ldap_user_1,ou=users,dc=luban-cae,dc=com
+member: uid=ldap_editor_1,ou=users,dc=luban-cae,dc=com
+member: uid=ldap_adm_1,ou=users,dc=luban-cae,dc=com
+
+dn: cn=EDITOR,ou=groups,dc=luban-cae,dc=com
+objectClass: groupOfNames
+cn: EDITOR
+description: Editor role (includes USER permissions)
+member: uid=ldap_editor_1,ou=users,dc=luban-cae,dc=com
+member: uid=ldap_adm_1,ou=users,dc=luban-cae,dc=com
+
+dn: cn=PRODUCT_ADMIN,ou=groups,dc=luban-cae,dc=com
+objectClass: groupOfNames
+cn: PRODUCT_ADMIN
+description: Product admin role (includes EDITOR + USER permissions)
+member: uid=ldap_adm_1,ou=users,dc=luban-cae,dc=com
