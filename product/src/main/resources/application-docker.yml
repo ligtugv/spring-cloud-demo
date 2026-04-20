@@ -26,7 +26,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: http://uaa:9000/.well-known/jwks.json
+          jwk-set-uri: http://microservice-uaa:9000/.well-known/jwks.json
 
 eureka:
   instance:

@@ -13,11 +13,11 @@ spring:
     gateway:
       routes:
         - id: auth
-          uri: http://uaa:9000
+          uri: http://microservice-uaa:9000
           predicates:
             - Path=/auth/**
         - id: uaa
-          uri: http://uaa:9000
+          uri: http://microservice-uaa:9000
           predicates:
             - Path=/uaa/**
         - id: product

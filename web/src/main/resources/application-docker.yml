@@ -10,7 +10,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: http://uaa:9000/.well-known/jwks.json
+          jwk-set-uri: http://microservice-uaa:9000/.well-known/jwks.json
 
 app:
   gateway-url: http://microservice-gateway:7573
