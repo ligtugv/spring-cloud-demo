@@ -35,7 +35,7 @@ services:
       retries: 5
 
   openldap:
-    image: osixiu/openldap:1.5.0
+    image: osixia/openldap:1.5.0
     container_name: microservice-openldap
     environment:
       LDAP_ORGANISATION: Luban CAE
@@ -57,7 +57,7 @@ services:
       retries: 10
 
   ldap-init:
-    image: osixiu/openldap:1.5.0
+    image: osixia/openldap:1.5.0
     container_name: microservice-ldap-init
     command: ["sh", "/init-ldap.sh"]
     volumes:
@@ -74,7 +74,7 @@ services:
     restart: "no"
 
   ldap-admin:
-    image: osixiu/phpldapadmin:0.9.0
+    image: osixia/phpldapadmin:0.9.0
     container_name: microservice-ldap-admin
     environment:
       PHPLDAPADMIN_HTTPS: "false"
